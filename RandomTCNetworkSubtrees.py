@@ -416,8 +416,8 @@ def RandomSubtrees(network, s):
 
 
 input =   open('input.txt', 'r')
-output =  open('output1.txt', 'w')
-output2 = open('output2.txt', 'w')
+output =  open('RandomTCsubtrees.txt', 'w')
+output2 = open('RandomTCdescription.txt', 'w')
 
 for line in input:
     [leaves, reticulations, samplesize] = ParseTC(line)
