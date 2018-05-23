@@ -436,7 +436,7 @@ for line in input:
     output2.write('\n')
     output2.write('Number of subtrees in other output file:' + str(actualsamplesize))
     output2.write('\n')
-    output2.write('The tree-child network is:' + str(network))
+    output2.write('The tree-child network is:' + str(deep_tuple(network)) + ';')
     output2.write('\n')
     if error_message != '':
         output2.write('ERROR MESSAGE: ' + error_message)
