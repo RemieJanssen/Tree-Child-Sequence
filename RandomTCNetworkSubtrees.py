@@ -435,6 +435,7 @@ for line in input:
     output2.write('Number of reticulations:' + str(reticulations))
     output2.write('\n')
     output2.write('Number of subtrees in other output file:' + str(actualsamplesize))
+    output2.write('\n')
     output2.write('The tree-child network is:' + str(network))
     output2.write('\n')
     if error_message != '':
