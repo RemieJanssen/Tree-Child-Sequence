@@ -403,12 +403,12 @@ def RandomSubtrees(network, s):
             s -= 1
         else:
             count += 1
-            if count < 1000:
+            if count < 10000:
                 continue
             else:
                 error_message = 'this network does not have ' + str(s) + ' many different subtrees.'
-                return [deep_tuple(subtrees), error_message]
-    return [deep_tuple(subtrees), error_message]
+                return [deep_tuple(subtrees), error_message, len(subtrees)]
+    return [deep_tuple(subtrees), error_message, len(subtrees)]
 
 
 ######################################################
@@ -421,14 +421,20 @@ output2 = open('RandomTCdescription.txt', 'w')
 
 for line in input:
     [leaves, reticulations, samplesize] = ParseTC(line)
+    if leaves <= reticulations:
+        error
+    if samplesize > 2**reticulations:
+        error
     network = GenerateTCNetwork(leaves, reticulations)
-    leaves = max(Leaves(network, []))
+    while max(Leaves(network, [])) != leaves:
+        network = GenerateTCNetwork(leaves, reticulations)
     reticulations = len(FindReticulations(network))
-    [subtrees, error_message] = RandomSubtrees(network, samplesize)
+    [subtrees, error_message, actualsamplesize] = RandomSubtrees(network, samplesize)
     output2.write('Number of leaves:' + str(leaves))
     output2.write('\n')
     output2.write('Number of reticulations:' + str(reticulations))
     output2.write('\n')
+    output2.write('Number of subtrees in other output file:' + str(actualsamplesize))
     output2.write('The tree-child network is:' + str(network))
     output2.write('\n')
     if error_message != '':
