@@ -72,11 +72,12 @@ option_f = False
 option_f_argument = ""
 option_k = False
 option_k_argument = 0
-option_inc = False
-option_dec = False
+option_BF = True
+option_DF = False
 option_bin = False
 option_clu = False
 i = 1
+
 while i < len(sys.argv):
     arg= sys.argv[i]
     if arg == "-f":
@@ -87,10 +88,11 @@ while i < len(sys.argv):
         option_k = True
         i+=1
         option_k_argument = int(sys.argv[i])
-    if arg == "-inc":
-        option_inc = True
-    if arg == "-dec":
-        option_dec = True
+    if arg == "-BF":
+        option_BF = True
+    if arg == "-DF":
+        option_DF = True
+        option_BF = False
     if arg == "-bin":
         option_bin = True
     if arg == "-clu":
@@ -100,52 +102,44 @@ while i < len(sys.argv):
 
 
 if option_f:
-    if not option_k:
-        print( "no reticulation parameter given, set to 0. Type -k [number]")
     treeList= ParseFile()
     if not treeList:
         print( "input contains wrong trees")
     else:
+        algorithm=TCSeqBF
+        if not option_k:
+            print( "no reticulation parameter given, set to number of leaves. Type -k [number] for custom setting")
+            option_k_argument = len(TaxaInForest(treeList))
+        print( "\n")
+        print( "Your list of trees:")
+        print( treeList)
+        print( "\n")
+        if option_BF:
+            print("Breadth first")
+            if option_bin:
+                print( "Binary solution:")
+                algorithm = BTCSeqBF
+            else: 
+                print( "NonBinary solution:")
+                algorithm = TCSeqBF
+        if option_DF:
+            print("Depth first")                
+            if option_bin:
+                print( "Binary solution:")
+                algorithm = BTCSeqDF
+            else: 
+                print( "NonBinary solution:")
+                algorithm = TCSeqDF
         if option_clu:
-            print( "\n")
-            print( "Your list of trees:")
-            print( treeList)
-            print( "\n")
-            print( "Non-Binary Maybe non-optimal solution:")
-            print( TCSeqCluster(treeList,option_k_argument))
+            print("Using cluster reduction")
+            print( TCSeqClusterOpt(treeList,option_k_argument, algorithm))
         else:
-            if not option_inc and not option_dec:
-                print( "\n")
-                print( "Your list of trees:")
-                print( treeList)
-                print( "\n")
-                if option_bin:
-                    print( "Binary solution:")
-                    print( BinaryTreeChildSequence(treeList,option_k_argument,option_k_argument,[],[]))
-                else: 
-                    print( "NonBinary solution:")
-                    print( TreeChildSequence(treeList,option_k_argument,option_k_argument,[]))
-            if option_inc:
-                print( "\n")
-                print( "Your list of trees:")
-                print( treeList)
-                print( "\n")
-                if option_bin:
-                    print( "Binary solution:")
-                    print( BTCSeqInc(treeList,option_k_argument))
-                else: 
-                    print( "NonBinary solution:")
-                    print( TCSeqInc(treeList,option_k_argument))
-            if option_dec:
-                print( "\n")
-                print( "Your list of trees:")
-                print( treeList)
-                print( "\n")
-                if option_bin:
-                    print( "Binary solution:")
-                    print( BTCSeqDec(treeList,option_k_argument))
-                else: 
-                    print( "NonBinary solution:")
-                    print( TCSeqDec(treeList,option_k_argument))
+            print("NOT Using cluster reduction")
+            print( algorithm(treeList,option_k_argument))
+            
+            
+
+
+
 else:
     print( "No input file, type -f [filename]")

@@ -1,6 +1,5 @@
-import sys
-import csv
 from functools import reduce
+from collections import deque
 
 #Changes from v2.0:
 # IsTrivialCherry(treeList,cherry) had a mistake. it checked whether cherry[0] was in a tree twice, now it checks both elements of the cherry 
@@ -111,7 +110,7 @@ def ContainsMULTree(forest):
 #Input:
 #Output:
 def CherryListTree( tree ):
-    if len(tree)==2:
+    if len(tree)==2 and type(tree)!=str:
         if type(tree[0])==str and type(tree[1])==str:
             return [[tree[0],tree[1]],[tree[1],tree[0]]]
         elif type(tree)==list:
@@ -180,12 +179,13 @@ def TNFCherries(treeList, forbiddenLeaves):
     cherriesLists = map(CherryListTree, treeList)
     taxaLists = map(TaxaInTree, treeList)
     taxaAndCherries = zip(taxaLists,cherriesLists)
+    allCherries= [item for sublist in cherriesLists for item in sublist]
     #make a list of the NF cherries in the first tree 
-    potentialTNFCherries = filter(lambda x: x[1] not in forbiddenLeaves, cherriesLists[0])
+    potentialTNFCherries = filter(lambda x: x[1] not in forbiddenLeaves, allCherries)
     #filter the list of potential cherries to be trivial
     #the reduction checks whether one cherry is trivial
-    TNFCherryList= filter(lambda x: reduce(lambda u,v: u and not(x not in v[1] and x[0] in v[0] and x[1] in v[0]), taxaAndCherries), potentialTNFCherries)
-    return TNFCherryList
+    TNFCherryList= filter(lambda x: all(map(lambda v: not(x not in v[1] and x[0] in v[0] and x[1] in v[0]) ,taxaAndCherries)), potentialTNFCherries)
+    return CleanList(TNFCherryList)
 
 
 # Makes a list of nonforbidden trivial cherries Binary case
@@ -195,12 +195,14 @@ def TNFCherriesBinary(treeList, forbiddenLeaves, forbiddenBinary):
     cherriesLists = map(CherryListTree, treeList)
     taxaLists = map(TaxaInTree, treeList)
     taxaAndCherries = zip(taxaLists,cherriesLists)
+    allCherries= [item for sublist in cherriesLists for item in sublist]
+    
     #make a list of the NF cherries in the first tree 
-    potentialTNFCherries = filter(lambda x: x[1] not in forbiddenLeaves and x[0] not in forbiddenBinary, cherriesLists[0])
+    potentialTNFCherries = filter(lambda x: x[1] not in forbiddenLeaves and x[0] not in forbiddenBinary, allCherries)
     #filter the list of potential cherries to be trivial
     #the reduction checks whether one cherry is trivial
-    TNFCherryList= filter(lambda x: reduce(lambda u,v: u and not(x not in v[1] and x[0] in v[0] and x[1] in v[0]), taxaAndCherries), potentialTNFCherries)
-    return TNFCherryList
+    TNFCherryList= filter(lambda x: all(map(lambda v: not(x not in v[1] and x[0] in v[0] and x[1] in v[0]) ,taxaAndCherries)), potentialTNFCherries)
+    return CleanList(TNFCherryList)
 
 
 
@@ -268,129 +270,365 @@ def ReduceTrivialCherriesBinary( treeList , forbidden , forbiddenBinary):
 
 
 
+#==============================================================================
+# #TreeChildSequence(treeList,k), takes a list of trees, a number k and a set of forbidden leaves. Outputs a TC sequence for treelist with at most k retics if it exists and forbidden leaves do not occur as second of the pair
+# def TreeChildSequence(treeList,k,kCurrent,forbidden):
+#     if k<0:
+#         return False
+#     S1, currentTrees, currentForbidden = ReduceTrivialCherries( treeList , forbidden )
+#     nfCherries = filter(lambda x: x[1] not in currentForbidden, CherryListForest(currentTrees))
+#     taxa=TaxaInForest(currentTrees)
+#     n=len(taxa)
+#     if n==1:#only one taxon left in all trees, so they are all the same one-leaf tree
+#         return S1+[[taxa[0],'-']]
+#     #if the algorithm reaches this part, then there are no trivial cherries in nfCherries, so they are all nonTrivial and nonForbidden
+#     if len(nfCherries) > 8*k :
+#         return False
+#     if kCurrent<1:
+#         return False
+#     #check if this works, we just need that any TC sequence for trees with n leaves in total need at most n+k+2 cherries (I think 2n should be fine already) 
+#     for c in nfCherries:#for all non-forbidden cherries 
+#         newTreeList=ReduceCherryForest(currentTrees,c)
+#         forbidden2=currentForbidden+[c[0]]
+#         newSeq=TreeChildSequence(newTreeList,k,kCurrent-1,forbidden2)
+#         if type(newSeq)==list:
+#             return S1+[c]+newSeq
+#     return False
+#             
+# 
+# #same as before, but now can only delete each leaf at most
+# def BinaryTreeChildSequence(treeList,k,kCurrent,forbidden,forbiddenBinary):
+#     if k<0:
+#         return False
+#     S1, currentTrees, currentForbidden, currentForbiddenBinary = ReduceTrivialCherriesBinary( treeList , forbidden , forbiddenBinary)
+#     nfCherries = filter(lambda x: x[0] not in currentForbiddenBinary and x[1] not in currentForbidden, CherryListForest(currentTrees))
+#     taxa=TaxaInForest(currentTrees)
+#     n=len(taxa)
+#     if n==1:#only one taxon left in all trees, so they are all the same one-leaf tree
+#         return S1+[[taxa[0],'-']]
+#     #if the algorithm reaches this part, then there are no trivial cherries in nfCherries, so they are all nonTrivial and nonForbidden
+#     if len(nfCherries) > 8*k :
+#         return False
+#     if kCurrent==0:
+#         return False
+#     #check if this works, we just need that any TC sequence for trees with n leaves in total need at most n+k+2 cherries
+#     for c in nfCherries:
+#         newTreeList=ReduceCherryForest(currentTrees,c)
+#         forbidden2=list(currentForbidden+[c[0]])
+#         forbiddenBinary2=list(currentForbiddenBinary)
+#         if c[0] in currentForbidden:
+#             forbiddenBinary2+=[c[0]]
+#         newSeq=BinaryTreeChildSequence(newTreeList,k,kCurrent-1,forbidden2,forbiddenBinary2)
+#         if type(newSeq)==list:
+#             return S1+[c]+newSeq
+#     return False
+#==============================================================================
+
+
+#==============================================================================
+# #Find optimal by looking for solutions with increasing reticulation number 
+# #BINARY
+# def BTCSeqInc(treeList,k):
+#     i=0
+#     while i<k+1:
+#         print('k='+str(i))
+#         S=BinaryTreeChildSequence(treeList,i,i,[],[])
+#         if S:
+#             print(S)
+#             return S
+#         print('does not work')
+#         i+=1
+#     else:
+#         return False
+# 
+# #Find optimal by looking for solutions with increasing reticulation number 
+# #Non-BINARY
+# def TCSeqInc(treeList,k):
+#     i=0
+#     while i<k+1:
+#         print( 'k='+str(i))
+#         S=TreeChildSequence(treeList,i,i,[])
+#         if S:
+#             print(S)
+#             return S
+#         print( 'does not work')
+#         i+=1
+#     else:
+#         print('done')
+#         return False
+# 
+#==============================================================================
+
+
+
+####################################NON-BINARY
+
+
 #TreeChildSequence(treeList,k), takes a list of trees, a number k and a set of forbidden leaves. Outputs a TC sequence for treelist with at most k retics if it exists and forbidden leaves do not occur as second of the pair
-def TreeChildSequence(treeList,k,kCurrent,forbidden):
+#Returns: Prune by feasibility?, Prune by optimality?, sequence, forbidden,  trees
+def TreeChildSequenceContinue(treeList,k,kLeft,forbidden):
+    if k<0 or kLeft<0:
+        return True, False, [],[] ,[],[]
     S1, currentTrees, currentForbidden = ReduceTrivialCherries( treeList , forbidden )
     nfCherries = filter(lambda x: x[1] not in currentForbidden, CherryListForest(currentTrees))
     taxa=TaxaInForest(currentTrees)
     n=len(taxa)
-    if n==1:#only one taxon left in all trees, so they are all the same one-leaf tree
-        return S1+[[taxa[0],'-']]
+    if n<=1:#only one taxon left in all trees, so they are all the same one-leaf tree
+        return False, True, S1+[[taxa[0],'-']], [],[],[]
     #if the algorithm reaches this part, then there are no trivial cherries in nfCherries, so they are all nonTrivial and nonForbidden
     if len(nfCherries) > 8*k :
-        return False
-    if kCurrent==0:
-        return False
-    #check if this works, we just need that any TC sequence for trees with n leaves in total need at most n+k+2 cherries (I think 2n should be fine already) 
-    for c in nfCherries:#for all non-forbidden cherries 
-        newTreeList=ReduceCherryForest(currentTrees,c)
-        forbidden2=currentForbidden+[c[0]]
-        newSeq=TreeChildSequence(newTreeList,k,kCurrent-1,forbidden2)
-        if type(newSeq)==list:
-            return S1+[c]+newSeq
-    return False
-            
+        return True, False, [], [],[],[]
+    if kLeft<1:
+        return True, False, [], [],[],[]
+    return False, False, S1 , nfCherries ,currentForbidden, currentTrees
 
-#same as before, but now can only delete each leaf at most
-def BinaryTreeChildSequence(treeList,k,kCurrent,forbidden,forbiddenBinary):
-    S1, currentTrees, currentForbidden, currentForbiddenBinary = ReduceTrivialCherriesBinary( treeList , forbidden , forbiddenBinary)
+
+
+
+#Find optimal by Depth first
+#Non-BINARY
+def TCSeqDF(treeList,k):
+    open_problems=[]
+    noOfTaxa=len(TaxaInForest(treeList))
+    currentBest=k+1
+    root=(treeList,0,[],[])#trees, number of retics already used,forbidden nodes, sequence
+    open_problems.append(root)
+    bestS=[]
+    while not open_problems==[]:
+        subtree_root=open_problems.pop()
+        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[3])>noOfTaxa+currentBest):
+            pruneFeasible, pruneOpt, S, nfCherries,currentForbidden, currentTrees =TreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2])
+            if not pruneFeasible and not pruneOpt:
+                #add problems to open_problems
+                for c in nfCherries:
+                    open_problems.append((ReduceCherryForest(currentTrees,c),subtree_root[1]+1,currentForbidden+[c[0]],subtree_root[3]+S+[c]))
+#            elif pruneFeasible and not pruneOpt:
+                #do not do anything
+            elif not pruneFeasible and pruneOpt:
+                #update best found retic number, remember this problem
+                kNewS=len(subtree_root[3])+len(S)-noOfTaxa
+                if kNewS<currentBest:
+                    currentBest=kNewS
+                    bestS=subtree_root[3]+S
+                    print('length of current best Sequence: '+str(len(bestS)))
+                    print( bestS)
+                    print( currentBest)
+    return bestS
+            
+            
+    
+#Find optimal by Breadth first
+#Non-BINARY
+def TCSeqBF(treeList,k):
+    open_problems=deque()
+    noOfTaxa=len(TaxaInForest(treeList))
+    currentBest=k+1
+    root=(treeList,0,[],[])#trees, number of retics already used,forbidden nodes, sequence
+    open_problems.append(root)
+    bestS=[]
+    while not len(open_problems)==0:
+        subtree_root=open_problems.popleft()
+        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[3])>noOfTaxa+currentBest):
+            pruneFeasible, pruneOpt, S, nfCherries,currentForbidden, currentTrees =TreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2])
+            if not pruneFeasible and not pruneOpt:
+                #add problems to open_problems
+                for c in nfCherries:
+                    open_problems.append((ReduceCherryForest(currentTrees,c),subtree_root[1]+1,currentForbidden+[c[0]],subtree_root[3]+S+[c]))
+    #        elif pruneFeasible and not pruneOpt:
+                #do not do anything
+            elif not pruneFeasible and pruneOpt:
+                #update best found retic number, remember this problem
+                kNewS=len(subtree_root[3])+len(S)-noOfTaxa
+                if kNewS<currentBest:
+                    currentBest=kNewS
+                    bestS=subtree_root[3]+S
+                    print('length of current best Sequence: '+str(len(bestS)))
+                    print( bestS)
+                    print( currentBest)
+    return bestS
+
+
+
+
+####################################BINARY
+
+
+#TreeChildSequence(treeList,k), takes a list of trees, a number k and a set of forbidden leaves. Outputs a TC sequence for treelist with at most k retics if it exists and forbidden leaves do not occur as second of the pair
+#Returns: Prune by feasibility?, Prune by optimality?, sequence, forbidden,forbiddenBinary,  trees,
+def BTreeChildSequenceContinue(treeList,k,kLeft,forbidden,forbiddenBinary):
+    if k<0 or kLeft<0:
+        return True, False, [],[] ,[],[],[]
+    S1, currentTrees, currentForbidden, currentForbiddenBinary = ReduceTrivialCherriesBinary ( treeList , forbidden ,forbiddenBinary)
     nfCherries = filter(lambda x: x[0] not in currentForbiddenBinary and x[1] not in currentForbidden, CherryListForest(currentTrees))
     taxa=TaxaInForest(currentTrees)
     n=len(taxa)
     if n==1:#only one taxon left in all trees, so they are all the same one-leaf tree
-        return S1+[[taxa[0],'-']]
+        return False, True, S1+[[taxa[0],'-']], [],[],[],[]
     #if the algorithm reaches this part, then there are no trivial cherries in nfCherries, so they are all nonTrivial and nonForbidden
     if len(nfCherries) > 8*k :
-        return False
-    if kCurrent==0:
-        return False
-    #check if this works, we just need that any TC sequence for trees with n leaves in total need at most n+k+2 cherries
-    for c in nfCherries:
-        newTreeList=ReduceCherryForest(currentTrees,c)
-        forbidden2=list(currentForbidden+[c[0]])
-        forbiddenBinary2=list(currentForbiddenBinary)
-        if c[0] in currentForbidden:
-            forbiddenBinary2+=[c[0]]
-        newSeq=BinaryTreeChildSequence(newTreeList,k,kCurrent-1,forbidden2,forbiddenBinary2)
-        if type(newSeq)==list:
-            return S1+[c]+newSeq
-    return False
+        return True, False, [], [],[],[],[]
+    if kLeft<1:
+        return True, False, [], [],[],[],[]
+    return False, False, S1 , nfCherries ,currentForbidden, currentForbiddenBinary, currentTrees
 
 
-#Find optimal by looking for solutions with increasing reticulation number 
+#Find optimal by Depth first
 #BINARY
-def BTCSeqInc(treeList,k):
-    i=0
-    while i<k+1:
-        print('k='+str(i))
-        S=BinaryTreeChildSequence(treeList,i,i,[],[])
-        if S:
-            return S
-        print('does not work')
-        i+=1
-    else:
-        return False
-
-#Find optimal by looking for solutions with increasing reticulation number 
-#Non-BINARY
-def TCSeqInc(treeList,k):
-    i=0
-    while i<k+1:
-        print( 'k='+str(i))
-        S=TreeChildSequence(treeList,i,i,[])
-        if S:
-            return S
-        print( 'does not work')
-        i+=1
-    else:
-        return False
-
-
-#Find optimal by looking for increasingly good solutions, i.e. find solution with retic number $i<k$, then run the algorithm looking for solution with at most $i-1$ retisulations
+def BTCSeqDF(treeList,k):
+    open_problems=[]
+    noOfTaxa=len(TaxaInForest(treeList))
+    currentBest=k+1
+    root=(treeList,0,[],[],[])#trees, number of retics already used,forbidden nodes, forbiddenBinary, sequence
+    open_problems.append(root)
+    bestS=[]
+    while not open_problems==[]:
+        subtree_root=open_problems.pop()
+        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[4])>noOfTaxa+currentBest):
+            pruneFeasible, pruneOpt, S, nfCherries,currentForbidden,currentForbiddenBinary, currentTrees =BTreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2],subtree_root[3])
+            if not pruneFeasible and not pruneOpt:
+                #add problems to open_problems
+                for c in nfCherries:
+                    if c[0] in currentForbidden:
+                        forbiddenBinary2=currentForbiddenBinary+[c[0]]
+                    else:
+                        forbidden2=currentForbidden+[c[0]]
+                        forbiddenBinary2=currentForbiddenBinary
+                    open_problems.append((ReduceCherryForest(currentTrees,c),subtree_root[1]+1,forbidden2,forbiddenBinary2,subtree_root[4]+S+[c]))
+    #        elif pruneFeasible and not pruneOpt:
+                #do not do anything
+            elif not pruneFeasible and pruneOpt:
+                #update best found retic number, remember this problem
+                kNewS=len(subtree_root[4])+len(S)-noOfTaxa
+                if kNewS<currentBest:
+                    currentBest=kNewS
+                    bestS=subtree_root[4]+S
+                    print('length of current best Sequence: '+str(len(bestS)))
+                    print( bestS)
+                    print( currentBest)
+    return bestS
+            
+            
+    
+#Find optimal by Breadth first
 #BINARY
-def BTCSeqDec(treeList,k):
+def BTCSeqBF(treeList,k):
+    open_problems=deque()
     noOfTaxa=len(TaxaInForest(treeList))
-    Done=False
-    i=1
-    currOpt='No solution'
-    currOptRetics=k
-    while not Done:
-        print( 'iteration: ' + str(i))
-        S=BinaryTreeChildSequence(treeList,currOptRetics-1,currOptRetics-1,[],[])
-        if S:
-            print( S)
-            currOpt=S
-            currOptRetics=len(S)-noOfTaxa
-            i+=1
-        else:
-            Done = True
-    return currOpt
-
-
-#Find optimal by looking for increasingly good solutions, i.e. find solution with retic number $i<k$, then run the algorithm looking for solution with at most $i-1$ retisulations
-#NON-BINARY
-def TCSeqDec(treeList,k):
-    noOfTaxa=len(TaxaInForest(treeList))
-    Done=False
-    i=1
-    currOpt='No solution'
-    currOptRetics=k
-    while not Done:
-        print( 'iteration: ' + str(i))
-        S=TreeChildSequence(treeList,currOptRetics-1,currOptRetics-1,[])
-        if S:
-            print( S)
-            currOpt=S
-            currOptRetics=len(S)-noOfTaxa
-            i+=1
-        else:
-            Done = True
-    return currOpt
+    currentBest=k+1
+    root=(treeList,0,[],[],[])#trees, number of retics already used,forbidden nodes, forbiddenBinary, sequence
+    open_problems.append(root)
+    bestS=[]
+    while not len(open_problems)==0:
+        subtree_root=open_problems.popleft()
+        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[4])>noOfTaxa+currentBest):
+            pruneFeasible, pruneOpt, S, nfCherries,currentForbidden,currentForbiddenBinary, currentTrees =BTreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2],subtree_root[3])
+            if not pruneFeasible and not pruneOpt:
+                #add problems to open_problems
+                for c in nfCherries:
+                    if c[0] in currentForbidden:
+                        forbiddenBinary2=currentForbiddenBinary+[c[0]]
+                    else:
+                        forbidden2=currentForbidden+[c[0]]
+                        forbiddenBinary2=currentForbiddenBinary
+                    open_problems.append((ReduceCherryForest(currentTrees,c),subtree_root[1]+1,forbidden2,forbiddenBinary2,subtree_root[4]+S+[c]))
+    #        elif pruneFeasible and not pruneOpt:
+                #do not do anything
+            elif not pruneFeasible and pruneOpt:
+                #update best found retic number, remember this problem
+                kNewS=len(subtree_root[4])+len(S)-noOfTaxa
+                if kNewS<currentBest:
+                    currentBest=kNewS
+                    bestS=subtree_root[4]+S
+                    print('length of current best Sequence: '+str(len(bestS)))
+                    print( bestS)
+                    print( currentBest)
+    return bestS
 
 
 
-#Find solution where each cluster has at most k retics
-def TCSeqCluster(treeList,k):
+
+
+
+
+#==============================================================================
+# 
+# #Find optimal by looking for increasingly good solutions, i.e. find solution with retic number $i<k$, then run the algorithm looking for solution with at most $i-1$ retisulations
+# #BINARY
+# def BTCSeqDec(treeList,k):
+#     noOfTaxa=len(TaxaInForest(treeList))
+#     Done=False
+#     i=1
+#     currOpt='No solution'
+#     currOptRetics=k+1
+#     while not Done:
+#         print( 'iteration: ' + str(i) +'kB='+ str(currOptRetics))
+#         S=BinaryTreeChildSequence(treeList,currOptRetics-1,currOptRetics-1,[],[])
+#         if S:
+#             print( S)
+#             currOpt=S
+#             currOptRetics=len(S)-noOfTaxa
+#             i+=1
+#         else:
+#             Done = True
+#     return currOpt
+# 
+# 
+# #Find optimal by looking for increasingly good solutions, i.e. find solution with retic number $i<k$, then run the algorithm looking for solution with at most $i-1$ retisulations
+# #NON-BINARY
+# def TCSeqDec(treeList,k):
+#     noOfTaxa=len(TaxaInForest(treeList))
+#     Done=False
+#     i=1
+#     currOpt='No solution'
+#     currOptRetics=k+1
+#     while not Done:
+#         print( 'iteration: ' + str(i) +'k='+ str(currOptRetics))
+#         S=TreeChildSequence(treeList,currOptRetics-1,currOptRetics-1,[])
+#         if S:
+#             print( S)
+#             currOpt=S
+#             currOptRetics=len(S)-noOfTaxa
+#             i+=1
+#         else:
+#             Done = True
+#     return currOpt
+# 
+#==============================================================================
+
+
+#==============================================================================
+# #Find solution where each cluster has at most k retics
+# def TCSeqCluster(treeList,k):
+#     allLeaves=TaxaInForest(treeList)
+#     leavesLeft=[]
+#     seq=[]
+#     clusters=MaximumCommonClusters(treeList)
+#     clustersTaxa=map(TaxaInTree,clusters)
+#     
+#     #The following adds all leaves that are nog in a cluster to leavesLeft
+#     for l in allLeaves:
+#         inACluster=False
+#         for c in clustersTaxa:
+#             if l in c:
+#                 inACluster=True
+#         if not inACluster:
+#             leavesLeft+=[l]
+#             
+#             
+#     newTreeLists = RestrictForest(treeList, clustersTaxa)
+#     for tl in newTreeLists:
+#         newSeq=TreeChildSequence(tl,k,k,[])
+#         seq+=newSeq[:-1]
+#         leavesLeft+=[newSeq[-1][0]]
+#     
+#     lastPart=TreeChildSequence(RestrictForest(treeList,[leavesLeft])[0],k,k,[])
+#     return seq+lastPart
+#==============================================================================
+        
+    
+
+#Find optimal solution using cluster reduction, for each cluster we use algorithm
+def TCSeqClusterOpt(treeList,k, algorithm):
     allLeaves=TaxaInForest(treeList)
     leavesLeft=[]
     seq=[]
@@ -406,18 +644,28 @@ def TCSeqCluster(treeList,k):
         if not inACluster:
             leavesLeft+=[l]
             
-            
+    print(clustersTaxa)
     newTreeLists = RestrictForest(treeList, clustersTaxa)
+    currK=k
     for tl in newTreeLists:
-        newSeq=TreeChildSequence(tl,k,k,[])
+        print(tl)
+        noOfTaxa=len(TaxaInTree(tl[0]))
+        newSeq=algorithm(tl,min(currK,noOfTaxa))
+        usedK=len(newSeq)-noOfTaxa
+        currK-=usedK
         seq+=newSeq[:-1]
-        print( newSeq)
+        print(newSeq)
         leavesLeft+=[newSeq[-1][0]]
     
-    lastPart=TreeChildSequence(RestrictForest(treeList,[leavesLeft])[0],k,k,[])
+    lastForest=RestrictForest(treeList,[leavesLeft])[0]
+    print(lastForest)
+    noOfTaxa=len(leavesLeft)
+    lastPart=algorithm(lastForest,min(currK,noOfTaxa))
+    if type(lastPart)!=list:
+        return('no solution')
     return seq+lastPart
-        
-    
+
+
         
 
 

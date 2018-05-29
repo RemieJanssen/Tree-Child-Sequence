@@ -20,7 +20,7 @@ def TimedRandomTrees(n,k,s):
     elapsed= timer()-start
     return trees,elapsed, nw
 
-def TimedAlgo(treeList,k,algorithm):
+def TimedAlgoClu(treeList,k,algorithm):
     elapsed=0
 #    if len(treeList)==1:
 #        seq=treeList[0]
@@ -30,25 +30,34 @@ def TimedAlgo(treeList,k,algorithm):
     elapsed= timer()-start
     return seq, elapsed 
 
+def TimedAlgo(treeList,k,algorithm):
+    elapsed=0
+#    if len(treeList)==1:
+#        seq=treeList[0]
+#    else:
+    start = timer()
+    seq = algorithm(treeList,k)
+    elapsed= timer()-start
+    return seq, elapsed 
 
 
-noOfLeaves = 30
-noOfTrees  = 2
-MaxNoOfRetics = 25
+noOfLeaves = 10
+noOfTrees  = 3
+MaxNoOfRetics = 9
 StepNoOfRetics = 1
 repeats = 10
 algo = [TCSeqBF,TCSeqDF]
 name=map(lambda x: x.__name__ , algo)
 
-if not os.path.exists('./output/'):
-    os.makedirs('./output/')
+if not os.path.exists('./outputWAndWOClu/'):
+    os.makedirs('./outputWAndWOClu/')
 
 
-with open('./output/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'_'+'s='+str(noOfTrees)+'.csv', 'w') as csvfile:
+with open('./outputWAndWOClu/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'_'+'s='+str(noOfTrees)+'.csv', 'w') as csvfile:
     fieldnames = ['kNw', 'network', 'timeNetwork','trees']
     for a in algo:
         nA=a.__name__
-        fieldnames+=['kFound'+nA,'timeSeq'+nA,'seq'+nA]
+        fieldnames+=['kFound'+nA,'timeSeq'+nA,'seq'+nA]+['ClukFound'+nA,'ClutimeSeq'+nA,'Cluseq'+nA]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for k in range(0,MaxNoOfRetics,StepNoOfRetics):
@@ -63,14 +72,24 @@ with open('./output/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'_'+'s='+str(noOfT
             newRow = {'kNw': k,'timeNetwork' : timeNetwork,'trees' : trees2, 'network' : nw, }
 
             for a in algo:
-                print(nA)
                 nA=a.__name__
+                print(nA)
+                print('no clu')
                 seq, timeSeq = TimedAlgo(trees2,noOfLeaves,a)
                 print(seq)
                 print(timeSeq)
                 newRow['kFound'+nA]= len(seq)-noOfLeaves
                 newRow['timeSeq'+nA] = timeSeq
                 newRow['seq'+nA] = seq
+                
+                print(nA)
+                print('clu')
+                seq, timeSeq = TimedAlgoClu(trees2,noOfLeaves,a)
+                print(seq)
+                print(timeSeq)
+                newRow['ClukFound'+nA]= len(seq)-noOfLeaves
+                newRow['ClutimeSeq'+nA] = timeSeq
+                newRow['Cluseq'+nA] = seq
             writer.writerow(newRow)
 
 

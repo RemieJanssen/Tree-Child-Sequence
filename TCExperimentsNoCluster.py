@@ -20,7 +20,7 @@ def TimedRandomTrees(n,k,s):
     elapsed= timer()-start
     return trees,elapsed, nw
 
-def TimedAlgo(treeList,k,algorithm):
+def TimedAlgoClu(treeList,k,algorithm):
     elapsed=0
 #    if len(treeList)==1:
 #        seq=treeList[0]
@@ -30,6 +30,15 @@ def TimedAlgo(treeList,k,algorithm):
     elapsed= timer()-start
     return seq, elapsed 
 
+def TimedAlgo(treeList,k,algorithm):
+    elapsed=0
+#    if len(treeList)==1:
+#        seq=treeList[0]
+#    else:
+    start = timer()
+    seq = algorithm(treeList,k)
+    elapsed= timer()-start
+    return seq, elapsed 
 
 
 noOfLeaves = 30
@@ -40,11 +49,11 @@ repeats = 10
 algo = [TCSeqBF,TCSeqDF]
 name=map(lambda x: x.__name__ , algo)
 
-if not os.path.exists('./output/'):
-    os.makedirs('./output/')
+if not os.path.exists('./outputNoClu/'):
+    os.makedirs('./outputNoClu/')
 
 
-with open('./output/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'_'+'s='+str(noOfTrees)+'.csv', 'w') as csvfile:
+with open('./outputNoClu/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'_'+'s='+str(noOfTrees)+'.csv', 'w') as csvfile:
     fieldnames = ['kNw', 'network', 'timeNetwork','trees']
     for a in algo:
         nA=a.__name__
