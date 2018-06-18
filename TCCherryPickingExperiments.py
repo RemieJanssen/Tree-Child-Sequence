@@ -102,7 +102,7 @@ with open('./outputNoOFtrees/algo='+str(name)+'_'+'n='+str(noOfLeaves)+'.csv', '
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
-for noOfTrees in range(MinNoOfTrees,MinNoOfTrees+1,StepNoOfTrees):
+for noOfTrees in range(MinNoOfTrees,MaxNoOfTrees+1,StepNoOfTrees):
     for k in range(MinNoOfRetics,MaxNoOfRetics+1,StepNoOfRetics):
         for r in range(repeats):
             print('\n')
