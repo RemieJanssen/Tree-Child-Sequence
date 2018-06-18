@@ -14,7 +14,7 @@ from collections import deque
 #4. Cherry reductions###################################
 #5. CONSTRUCTIONS ALGORITHMS############################
 #6. CLUSTERS############################################
-#7. MAIN################################################
+#7. Check Sequences################################################
 
 
 ###############################1. PARSING############################
@@ -393,10 +393,10 @@ def TCSeqDF(treeList,k):
     currentBest=k+1
     root=(treeList,0,[],[])#trees, number of retics already used,forbidden nodes, sequence
     open_problems.append(root)
-    bestS=[]
+    bestS='noSolution'
     while not open_problems==[]:
         subtree_root=open_problems.pop()
-        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[3])>noOfTaxa+currentBest):
+        if len(TaxaInForest(subtree_root[0]))+len(subtree_root[3]) < noOfTaxa+currentBest:
             pruneFeasible, pruneOpt, S, nfCherries,currentForbidden, currentTrees =TreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2])
             if not pruneFeasible and not pruneOpt:
                 #add problems to open_problems
@@ -410,9 +410,9 @@ def TCSeqDF(treeList,k):
                 if kNewS<currentBest:
                     currentBest=kNewS
                     bestS=subtree_root[3]+S
-                    print('length of current best Sequence: '+str(len(bestS)))
-                    print( bestS)
-                    print( currentBest)
+#                    print('length of current best Sequence: '+str(len(bestS)))
+#                    print( bestS)
+#                    print( currentBest)
     return bestS
             
             
@@ -425,10 +425,10 @@ def TCSeqBF(treeList,k):
     currentBest=k+1
     root=(treeList,0,[],[])#trees, number of retics already used,forbidden nodes, sequence
     open_problems.append(root)
-    bestS=[]
+    bestS='noSolution'
     while not len(open_problems)==0:
         subtree_root=open_problems.popleft()
-        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[3])>noOfTaxa+currentBest):
+        if len(TaxaInForest(subtree_root[0]))+len(subtree_root[3]) < noOfTaxa+currentBest:
             pruneFeasible, pruneOpt, S, nfCherries,currentForbidden, currentTrees =TreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2])
             if not pruneFeasible and not pruneOpt:
                 #add problems to open_problems
@@ -480,10 +480,10 @@ def BTCSeqDF(treeList,k):
     currentBest=k+1
     root=(treeList,0,[],[],[])#trees, number of retics already used,forbidden nodes, forbiddenBinary, sequence
     open_problems.append(root)
-    bestS=[]
+    bestS='noSolution'
     while not open_problems==[]:
         subtree_root=open_problems.pop()
-        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[4])>noOfTaxa+currentBest):
+        if len(TaxaInForest(subtree_root[0]))+len(subtree_root[4]) < noOfTaxa+currentBest:
             pruneFeasible, pruneOpt, S, nfCherries,currentForbidden,currentForbiddenBinary, currentTrees =BTreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2],subtree_root[3])
             if not pruneFeasible and not pruneOpt:
                 #add problems to open_problems
@@ -517,10 +517,10 @@ def BTCSeqBF(treeList,k):
     currentBest=k+1
     root=(treeList,0,[],[],[])#trees, number of retics already used,forbidden nodes, forbiddenBinary, sequence
     open_problems.append(root)
-    bestS=[]
+    bestS='noSolution'
     while not len(open_problems)==0:
         subtree_root=open_problems.popleft()
-        if (not len(TaxaInForest(subtree_root[0]))+len(subtree_root[4])>noOfTaxa+currentBest):
+        if len(TaxaInForest(subtree_root[0]))+len(subtree_root[4]) < noOfTaxa+currentBest :
             pruneFeasible, pruneOpt, S, nfCherries,currentForbidden,currentForbiddenBinary, currentTrees =BTreeChildSequenceContinue(subtree_root[0],currentBest,currentBest-subtree_root[1],subtree_root[2],subtree_root[3])
             if not pruneFeasible and not pruneOpt:
                 #add problems to open_problems
@@ -628,13 +628,18 @@ def BTCSeqBF(treeList,k):
     
 
 #Find optimal solution using cluster reduction, for each cluster we use algorithm
+#
+## ISSUES!
+#
+#does not seem to give the right answer every time yet!
+
 def TCSeqClusterOpt(treeList,k, algorithm):
     allLeaves=TaxaInForest(treeList)
     leavesLeft=[]
     seq=[]
     clusters=MaximumCommonClusters(treeList)
     clustersTaxa=map(TaxaInTree,clusters)
-    
+    totalUsedK=0
     #The following adds all leaves that are nog in a cluster to leavesLeft
     for l in allLeaves:
         inACluster=False
@@ -647,24 +652,89 @@ def TCSeqClusterOpt(treeList,k, algorithm):
     print(clustersTaxa)
     newTreeLists = RestrictForest(treeList, clustersTaxa)
     currK=k
-    for tl in newTreeLists:
+    for i,tl in enumerate(newTreeLists):
+        print('-----------------------------------------------------')
+        print(currK)
+        print(totalUsedK)
+        print('-----------------------------------------------------')
         print(tl)
-        noOfTaxa=len(TaxaInTree(tl[0]))
+        print(clustersTaxa[i])
+        noOfTaxa=len(clustersTaxa[i])
         newSeq=algorithm(tl,min(currK,noOfTaxa))
         usedK=len(newSeq)-noOfTaxa
         currK-=usedK
+        totalUsedK+=usedK
         seq+=newSeq[:-1]
         print(newSeq)
         leavesLeft+=[newSeq[-1][0]]
     
+    print('-----------------------------------------------------')
+    print(currK)
+    print
+    print('-----------------------------------------------------')    
     lastForest=RestrictForest(treeList,[leavesLeft])[0]
     print(lastForest)
+    print(leavesLeft)
     noOfTaxa=len(leavesLeft)
     lastPart=algorithm(lastForest,min(currK,noOfTaxa))
     if type(lastPart)!=list:
         return('no solution')
+    print('-----------------------------------------------------')    
+
+    print(len(seq+lastPart)-len(allLeaves))
     return seq+lastPart
 
+
+
+#Find optimal solution using cluster reduction, for each cluster we use algorithm
+#Uses all clusters, from small to large,
+#
+## ISSUES!
+#
+#does not seem to give the right answer every time yet!
+def TCSeqClusterTotalOpt(treeList,k, algorithm):
+    allLeaves=TaxaInForest(treeList)
+    seq=[]
+    clusters=CommonClusters(treeList)
+    clustersTaxa=sorted(map(TaxaInTree,clusters),key=len)+[allLeaves]
+    totalUsedK=0
+    currentTrees=treeList[:]
+
+#    print('the clusters are:')
+#    print(clustersTaxa)
+#    print('\n')
+
+
+#    newTreeLists = RestrictForest(treeList, clustersTaxa)
+
+    currK=k
+    
+    for i,clu in enumerate(clustersTaxa):
+#        print('-----------------------------------------------------')
+#        print(currK)
+#        print(totalUsedK)
+#        print(clu)
+        tlClu = RestrictForest(currentTrees,[clu])[0] 
+#        print(tlClu)
+#        print('-----------------------------------------------------')
+        currentTaxa=TaxaInForest(tlClu)
+        noOfTaxa=len(currentTaxa)
+        newSeq=algorithm(tlClu,min(currK,noOfTaxa))
+        usedK=len(newSeq)-noOfTaxa
+        currK-=usedK
+        totalUsedK+=usedK
+        seq+=newSeq[:-1]
+#        print(newSeq)
+        currentTrees=RemoveLeavesForest(currentTrees,clu,[newSeq[-1][0]])
+    seq+=newSeq[-1:]
+    print('-----------------------------------------------------')
+#    print(currK)
+#    print(totalUsedK)
+#    print('')
+    print(seq)
+    print('-----------------------------------------------------')    
+    
+    return seq
 
         
 
@@ -711,6 +781,47 @@ def RestrictForest(treeList, speciesLists):
 
 
 
+def RemoveLeavesTree(tree,removed):
+    if type(tree)==str:
+        if tree in removed:
+            return []
+        return tree
+    part0 = RemoveLeavesTree(tree[0],removed)
+    part1 = RemoveLeavesTree(tree[1],removed)
+    if part0==[] and part1==[]:
+        return[]
+    elif part0==[]:
+        return part1
+    elif part1==[]:
+        return part0
+    return [part0,part1]
+
+
+
+def RemoveLeavesForest(treeList,removed,exceptions):
+    removed1=set()
+    if exceptions!=[]:
+        for x in removed:
+            if x not in exceptions:
+                removed1.add(x)
+    else:
+        removed1=set(removed)
+    return map(lambda x: RemoveLeavesTree(x,removed1),treeList)
+
+
+
+# Returns a list of all leaves in the tree/network.
+
+def Leaves(tree, leaves):
+    if isinstance(tree, str):
+        if tree not in leaves:
+            leaves.append(tree)
+        return leaves
+    else:
+        Leaves(tree[0], leaves)
+        Leaves(tree[1], leaves)
+        return leaves
+
 ## TreeClusterSet(tree,m)
 ## Input:  list representing a tree, e.g. [[[1, [4, [3, 2]]], 5], [6, [[9, 7], 10]]];, m = [tree]
 ## Output: list of clusters it contains
@@ -736,7 +847,6 @@ def TreeClusterSet(tree, m):
         return m
 
 
-
 ## MultipleClusterSet(trees)
 ## Input:  list of trees
 ## Output: list of all cluster lists of trees
@@ -760,7 +870,7 @@ def CommonClusters(trees):
         count = 0
         for i in range(1,len(n)):
             for item2 in n[i]:
-                if set(','.join(str(j) for j in item1)) == ((set(','.join(str(j) for j in item2)))):
+                if sorted(Leaves(item1,[])) == sorted(Leaves(item2, [])):
                     count += 1
         if count == len(n)-1:
             commonclusters.append(item1)
@@ -777,7 +887,7 @@ def MaximumCommonClusters(trees):
     copyclusters = clusters[:]
     for item in clusters:
         for item2 in clusters:
-            if set(','.join(str(i) for i in item)).issubset(set(','.join(str(i) for i in item2))) and item != item2:
+            if set(sorted(Leaves(item,[]))).issubset(set(sorted(Leaves(item2,[])))) and item != item2:
                 copyclusters.remove(item)
                 break
     return copyclusters
@@ -788,5 +898,30 @@ def MaximumCommonClusters(trees):
 
 
 
-
 #########################7. MAIN################################################
+
+def CheckSeqForbidden(seq):
+    forbidden=set()
+    for c in seq:
+        if c[1] in seq:
+            return False
+        forbidden.add(c[0])
+    return True
+
+def ReducesTrees(treeList,seq):
+    currentTrees=treeList
+    for c in seq[:-1]:
+        currentTrees = ReduceCherryForest(currentTrees,c)
+    for t in currentTrees:
+        if t!=seq[-1][0]:
+            return False
+    return True
+
+def TestTCseq(treeList,seq):
+    if CheckSeqForbidden(seq):
+        if ReducesTrees(treeList,seq):
+            return True
+        else:
+            return False, 'does not reduce forest'
+    else: 
+        return False, 'forbidden cherries'
