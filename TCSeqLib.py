@@ -628,10 +628,7 @@ def BTCSeqBF(treeList,k):
     
 
 #Find optimal solution using cluster reduction, for each cluster we use algorithm
-#
-## ISSUES!
-#
-#does not seem to give the right answer every time yet!
+
 
 def TCSeqClusterOpt(treeList,k, algorithm):
     allLeaves=TaxaInForest(treeList)
@@ -688,10 +685,7 @@ def TCSeqClusterOpt(treeList,k, algorithm):
 
 #Find optimal solution using cluster reduction, for each cluster we use algorithm
 #Uses all clusters, from small to large,
-#
-## ISSUES!
-#
-#does not seem to give the right answer every time yet!
+
 def TCSeqClusterTotalOpt(treeList,k, algorithm):
     allLeaves=TaxaInForest(treeList)
     seq=[]
